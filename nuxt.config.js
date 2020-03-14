@@ -1,5 +1,4 @@
 require('dotenv').config({ path: './' })
-const { ENV } = process.env
 
 module.exports = {
   mode: 'spa',
@@ -60,7 +59,15 @@ module.exports = {
    */
   axios: {},
   env: {
-    ENV
+    APIKEY: process.env.APIKEY,
+    AUTHDOMAIN: process.env.AUTHDOMAIN,
+    DATABASEURL: process.env.DATABASEURL,
+    PROJECTID: process.env.PROJECTID,
+    STORAGEBUCKET: process.env.STORAGEBUCKET,
+    MESSAGINGSENDERID: process.env.MESSAGINGSENDERID,
+    APPID: process.env.APPID,
+    MEASUREMENTID: process.env.MEASUREMENTID,
+    GOOGLEOAUTHCLIENTID: process.env.GOOGLEOAUTHCLIENTID
   },
   /*
    ** Build configuration

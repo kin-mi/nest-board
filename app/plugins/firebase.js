@@ -2,7 +2,6 @@ import firebase from 'firebase/app'
 import 'firebase/auth'
 
 if (!firebase.apps.length) {
-  console.log(process.env.APIKEY)
   firebase.initializeApp({
     apiKey: process.env.APIKEY,
     authDomain: process.env.AUTHDOMAIN,
