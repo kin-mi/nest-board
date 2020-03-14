@@ -60,6 +60,8 @@ export default {
       }
       console.log({ initConfig })
       return this.gapi.client.init(initConfig).then(() => {
+        console.log(this.accessToken)
+        // this.gapi.client.setToken({ access_token: this.accessToken })
         const googleAuth = this.gapi.auth2.getAuthInstance()
         console.log({ googleAuth })
         const googleUser = this.gapi.auth2.getAuthInstance().currentUser.get()
