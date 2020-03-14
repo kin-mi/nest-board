@@ -52,22 +52,22 @@ export default {
       if (this.gapi) this.gapi.load('client:auth2')
     },
     gapiInit() {
-      return this.gapi.client
-        .init({
-          apiKey: authConfig.Google.apiKey,
-          clientId: authConfig.Google.clientId,
-          discoveryDocs: authConfig.Google.discoveryDocs,
-          scope: authConfig.Google.scopes.join(' ')
-        })
-        .then(() => {
-          const googleUser = this.gapi.auth2.getAuthInstance().currentUser.get()
-          console.log({ googleUser })
-          const idToken = googleUser.getAuthResponse().id_token
-          console.log({ idToken })
-          const creds = firebase.auth.GoogleAuthProvider.credential(idToken)
-          console.log({ creds })
-          return firebase.auth().signInWithCredential(creds)
-        })
+      const initConfig = {
+        apiKey: authConfig.Google.apiKey,
+        clientId: authConfig.Google.clientId,
+        discoveryDocs: authConfig.Google.discoveryDocs,
+        scope: authConfig.Google.scopes.join(' ')
+      }
+      console.log({ initConfig })
+      return this.gapi.client.init(initConfig).then(() => {
+        const googleUser = this.gapi.auth2.getAuthInstance().currentUser.get()
+        console.log({ googleUser })
+        const idToken = googleUser.getAuthResponse().id_token
+        console.log({ idToken })
+        const creds = firebase.auth.GoogleAuthProvider.credential(idToken)
+        console.log({ creds })
+        return firebase.auth().signInWithCredential(creds)
+      })
     },
     create() {
       // https://medium.com/google-cloud/using-google-apis-with-firebase-auth-and-firebase-ui-on-the-web-46e6189cf571
