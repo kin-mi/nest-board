@@ -14,7 +14,7 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import { authConfig } from '~/plugins/firebase'
+import firebase, { authConfig } from '~/plugins/firebase'
 export default {
   data() {
     return {
@@ -52,18 +52,30 @@ export default {
       if (this.gapi) this.gapi.load('client:auth2')
     },
     gapiInit() {
-      return this.gapi.client.init({
-        apiKey: authConfig.Google.apiKey,
-        clientId: authConfig.Google.clientId,
-        discoveryDocs: authConfig.Google.discoveryDocs,
-        scope: authConfig.Google.scopes.join(' ')
-      })
+      return this.gapi.client
+        .init({
+          apiKey: authConfig.Google.apiKey,
+          clientId: authConfig.Google.clientId,
+          discoveryDocs: authConfig.Google.discoveryDocs,
+          scope: authConfig.Google.scopes.join(' ')
+        })
+        .then(() => {
+          const googleUser = this.gapi.auth2.getAuthInstance().currentUser.get()
+          const idToken = googleUser.getAuthResponse().id_token
+          const creds = firebase.auth.GoogleAuthProvider.credential(idToken)
+          return firebase.auth().signInWithCredential(creds)
+        })
     },
     create() {
       // https://medium.com/google-cloud/using-google-apis-with-firebase-auth-and-firebase-ui-on-the-web-46e6189cf571
       // 不完全
       const self = this
-      this.gapiInit().then(() => {
+      this.gapiInit().then((user) => {
+        const googleUser = self.gapi.auth2.getAuthInstance().currentUser.get()
+        console.log({ googleUser })
+        console.log(googleUser.getAuthResponse().id_token)
+        // const token = await user.getIdToken().then((token) => token)
+        console.log(user.credential.idToken)
         self.gapi.client.photoslibrary.albums
           .create({
             album: {
