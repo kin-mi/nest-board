@@ -61,8 +61,11 @@ export default {
         })
         .then(() => {
           const googleUser = this.gapi.auth2.getAuthInstance().currentUser.get()
+          console.log({ googleUser })
           const idToken = googleUser.getAuthResponse().id_token
+          console.log({ idToken })
           const creds = firebase.auth.GoogleAuthProvider.credential(idToken)
+          console.log({ creds })
           return firebase.auth().signInWithCredential(creds)
         })
     },
