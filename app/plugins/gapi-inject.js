@@ -1,6 +1,6 @@
 import firebase, { authConfig } from '~/plugins/firebase'
 
-export default async ({ $axios }, inject) => {
+export default async ({ $axios, store }, inject) => {
   const gapiScript = document.createElement('script')
   const src = await $axios.$get('https://apis.google.com/js/api.js')
   gapiScript.appendChild(document.createTextNode(src))
@@ -35,16 +35,20 @@ export default async ({ $axios }, inject) => {
     )
     return signIn
   }
+  const signOut = () => {
+    const signIn = auth().then((auth) =>
+      auth.signOut().then(() => {
+        firebase.auth().signOut()
+        store.commit('auth/logout')
+      })
+    )
+    return signIn
+  }
+
+  // ログイン済みの場合、Firebaseにもログインする
   const googleAuth = await auth()
-  console.log(googleAuth.isSignedIn.get())
   if (googleAuth.isSignedIn.get()) {
     const googleUser = googleAuth.currentUser.get()
-    const profile = googleUser.getBasicProfile()
-    console.log('gapi: user signed in!', {
-      name: profile.getName(),
-      imageURL: profile.getImageUrl(),
-      email: profile.getEmail()
-    })
     const authResponse = googleUser.getAuthResponse(true)
     const credential = firebase.auth.GoogleAuthProvider.credential(
       authResponse.id_token,
@@ -54,17 +58,12 @@ export default async ({ $axios }, inject) => {
       .auth()
       .signInWithCredential(credential)
       .then(({ user }) => {
-        console.log('firebase: user signed in!', {
-          displayName: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL
-        })
+        store.dispatch('auth/gotUser', user)
       })
-  } else {
-    console.log('gapi: user is not signed in')
   }
   inject('gapi', gapi)
   inject('gapiInit', init)
   inject('googleAuth', auth)
   inject('googleSignIn', signIn)
+  inject('googleSignOut', signOut)
 }

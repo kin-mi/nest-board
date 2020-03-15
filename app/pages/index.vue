@@ -3,18 +3,19 @@
     <div class="container">
       <div>
         <h1 class="title">Nest Board</h1>
-        <button v-if="!accessToken" @click="login">login</button><br />
-        <input v-if="accessToken" v-model="inputAlbumTitle" /><br />
-        <button v-if="accessToken" @click="create">create</button><br />
-        <!-- <button v-if="accessToken" @click="fetchList">get</button><br /> -->
+        <button v-if="!isLoggedIn" @click="$googleSignIn">login</button><br />
+        <input v-if="isLoggedIn" v-model="inputAlbumTitle" /><br />
+        <button v-if="isLoggedIn" @click="createAlbum">create</button><br />
+        <button v-if="isLoggedIn" @click="fetchAlbumList">get</button><br />
+        <br />
+        <button v-if="isLoggedIn" @click="$googleSignOut">logout</button><br />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
-// import firebase, { authConfig } from '~/plugins/firebase'
+import { mapGetters } from 'vuex'
 export default {
   data() {
     return {
@@ -39,23 +40,13 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('auth', ['id', 'accessToken'])
-  },
-  mounted() {
-    // this.$gapiInit.then(() => {
-    //   console.log(this.$gapi.auth2.getAuthInstance())
-    // })
-    // const auth = await this.$googleAuth()
-    this.$googleAuth().then((auth) => {
-      console.log(auth.isSignedIn.get())
-    })
+    ...mapGetters('auth', ['isLoggedIn'])
   },
   methods: {
-    create() {
+    createAlbum() {
       // https://medium.com/google-cloud/using-google-apis-with-firebase-auth-and-firebase-ui-on-the-web-46e6189cf571
       // 不完全
       this.$gapiInit().then(() => {
-        console.log(this.$gapi)
         this.$gapi.client.photoslibrary.albums
           .create({
             album: {
@@ -63,50 +54,34 @@ export default {
             }
           })
           .then((response) => {
+            // eslint-disable-next-line no-console
             console.log(response)
           })
       })
-      // const self = this
-      // this.gapiInit().then((user) => {
-      //   const googleUser = self.$gapi.auth2.getAuthInstance().currentUser.get()
-      //   console.log({ googleUser })
-      //   console.log(googleUser.getAuthResponse().id_token)
-      //   // const token = await user.getIdToken().then((token) => token)
-      //   console.log(user.credential.idToken)
-      //   self.$gapi.client.photoslibrary.albums
-      //     .create({
-      //       album: {
-      //         title: this.inputAlbumTitle
-      //       }
-      //     })
-      //     .then((response) => {
-      //       // console.log(response)
-      //     })
-      // })
     },
-    // fetchList() {
-    //   this.albumList = []
-    //   const config = {
-    //     pageSize: 50
-    //   }
-    //   const self = this
-    //   this.gapiInit().then(function() {
-    //     const call = (config) =>
-    //       self.$gapi.client.photoslibrary.albums
-    //         .list(config)
-    //         .then((response) => {
-    //           // 0件の場合もある
-    //           if (!response.result.albums) return
-    //           response.result.albums.forEach((album) => {
-    //             self.albumList.push(album)
-    //           })
-    //           config.pageToken = response.result.nextPageToken
-    //           if (config.pageToken) call(config)
-    //         })
-    //     call(config)
-    //   })
-    // },
-    ...mapActions('auth', ['login'])
+    fetchAlbumList() {
+      this.albumList = []
+      const config = {
+        pageSize: 50
+      }
+      this.$gapiInit().then(() => {
+        const call = (config) => {
+          this.$gapi.client.photoslibrary.albums
+            .list(config)
+            .then((response) => {
+              // 0件の場合もある
+              if (!response.result.albums) return
+              response.result.albums.forEach((album) => {
+                this.albumList.push(album)
+              })
+              config.pageToken = response.result.nextPageToken
+              // 次ページがある場合は再帰する
+              if (config.pageToken) call(config)
+            })
+        }
+        call(config)
+      })
+    }
   }
 }
 </script>

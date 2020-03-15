@@ -50,9 +50,9 @@ module.exports = {
     // Doc: https://github.com/nuxt-community/dotenv-module
     ['@nuxtjs/dotenv', { path: './' }]
   ],
-  router: {
-    middleware: 'authenticated'
-  },
+  // router: {
+  //   middleware: 'authenticated'
+  // },
   /*
    ** Axios module configuration
    ** See https://axios.nuxtjs.org/options
