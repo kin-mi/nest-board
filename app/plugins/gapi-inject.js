@@ -36,7 +36,8 @@ export default async ({ $axios }, inject) => {
     return signIn
   }
   const googleAuth = await auth()
-  if (googleAuth.isSignedIn) {
+  console.log(googleAuth.isSignedIn.get())
+  if (googleAuth.isSignedIn.get()) {
     const googleUser = googleAuth.currentUser.get()
     const profile = googleUser.getBasicProfile()
     console.log('gapi: user signed in!', {
