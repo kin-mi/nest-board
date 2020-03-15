@@ -1,4 +1,4 @@
-import firebase, { authProvider } from '~/plugins/firebase'
+import firebase from '~/plugins/firebase'
 
 export const state = () => ({
   status: '',
@@ -33,8 +33,10 @@ export const actions = {
     user.accessToken = await user.getIdToken().then((token) => token)
     commit('setUser', user)
   },
-  login() {
-    firebase.auth().signInWithRedirect(authProvider())
+  async login() {
+    const googleAuth = await this.$googleAuth()
+    console.log({ googleAuth })
+    this.$googleSignIn()
   },
   logout({ commit }) {
     firebase

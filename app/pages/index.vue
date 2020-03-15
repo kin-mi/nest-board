@@ -4,9 +4,9 @@
       <div>
         <h1 class="title">Nest Board</h1>
         <button v-if="!accessToken" @click="login">login</button><br />
-        <input v-if="accessToken && gapi" v-model="inputAlbumTitle" /><br />
-        <button v-if="accessToken && gapi" @click="create">create</button><br />
-        <button v-if="accessToken && gapi" @click="fetchList">get</button><br />
+        <input v-if="accessToken" v-model="inputAlbumTitle" /><br />
+        <button v-if="accessToken" @click="create">create</button><br />
+        <button v-if="accessToken" @click="fetchList">get</button><br />
       </div>
     </div>
   </div>
@@ -14,11 +14,10 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import firebase, { authConfig } from '~/plugins/firebase'
+// import firebase, { authConfig } from '~/plugins/firebase'
 export default {
   data() {
     return {
-      gapi: null,
       inputAlbumTitle: 'nest-board-1',
       albumList: []
     }
@@ -27,95 +26,86 @@ export default {
     return {
       // head内でcallbackを使う
       // https://vueschool.io/articles/vuejs-tutorials/how-to-load-third-party-scripts-in-nuxt-js/
-      script: [
-        {
-          src: 'https://apis.google.com/js/api.js',
-          type: 'text/javascript',
-          callback: () => {
-            this.gapi = window.gapi
-            this.gapiClientLoad()
-          }
-        }
-      ]
+      // script: [
+      //   {
+      //     src: 'https://apis.google.com/js/api.js',
+      //     type: 'text/javascript',
+      //     callback: () => {
+      //       this.gapi = window.gapi
+      //       this.gapiClientLoad()
+      //     }
+      //   }
+      // ]
     }
   },
   computed: {
     ...mapGetters('auth', ['id', 'accessToken'])
   },
-  watch: {
-    accessToken(newVal, oldVal) {
-      if (!oldVal) this.gapiClientLoad()
-    }
+  mounted() {
+    // this.$gapiInit.then(() => {
+    //   console.log(this.$gapi.auth2.getAuthInstance())
+    // })
+    // const auth = await this.$googleAuth()
+    this.$googleAuth().then((auth) => {
+      console.log(auth.isSignedIn.get())
+    })
   },
   methods: {
-    gapiClientLoad() {
-      if (this.gapi) this.gapi.load('client:auth2')
-    },
-    gapiInit() {
-      const initConfig = {
-        apiKey: authConfig.Google.apiKey,
-        clientId: authConfig.Google.clientId,
-        discoveryDocs: authConfig.Google.discoveryDocs,
-        scope: authConfig.Google.scopes.join(' ')
-      }
-      console.log({ initConfig })
-      return this.gapi.client.init(initConfig).then(() => {
-        console.log(this.accessToken)
-        // this.gapi.client.setToken({ access_token: this.accessToken })
-        const googleAuth = this.gapi.auth2.getAuthInstance()
-        console.log({ googleAuth })
-        const googleUser = this.gapi.auth2.getAuthInstance().currentUser.get()
-        console.log({ googleUser })
-        const idToken = googleUser.getAuthResponse().id_token
-        console.log({ idToken })
-        const creds = firebase.auth.GoogleAuthProvider.credential(idToken)
-        console.log({ creds })
-        return firebase.auth().signInWithCredential(creds)
-      })
-    },
     create() {
       // https://medium.com/google-cloud/using-google-apis-with-firebase-auth-and-firebase-ui-on-the-web-46e6189cf571
       // 不完全
-      const self = this
-      this.gapiInit().then((user) => {
-        const googleUser = self.gapi.auth2.getAuthInstance().currentUser.get()
-        console.log({ googleUser })
-        console.log(googleUser.getAuthResponse().id_token)
-        // const token = await user.getIdToken().then((token) => token)
-        console.log(user.credential.idToken)
-        self.gapi.client.photoslibrary.albums
+      this.$gapiInit().then(() => {
+        console.log(this.$gapi)
+        this.$gapi.client.photoslibrary.albums
           .create({
             album: {
               title: this.inputAlbumTitle
             }
           })
           .then((response) => {
-            // console.log(response)
+            console.log(response)
           })
       })
+      // const self = this
+      // this.gapiInit().then((user) => {
+      //   const googleUser = self.$gapi.auth2.getAuthInstance().currentUser.get()
+      //   console.log({ googleUser })
+      //   console.log(googleUser.getAuthResponse().id_token)
+      //   // const token = await user.getIdToken().then((token) => token)
+      //   console.log(user.credential.idToken)
+      //   self.$gapi.client.photoslibrary.albums
+      //     .create({
+      //       album: {
+      //         title: this.inputAlbumTitle
+      //       }
+      //     })
+      //     .then((response) => {
+      //       // console.log(response)
+      //     })
+      // })
     },
-    fetchList() {
-      this.albumList = []
-      const config = {
-        pageSize: 50
-      }
-      const self = this
-      this.gapiInit().then(function() {
-        const call = (config) =>
-          self.gapi.client.photoslibrary.albums
-            .list(config)
-            .then((response) => {
-              // 0件の場合もある
-              if (!response.result.albums) return
-              response.result.albums.forEach((album) => {
-                self.albumList.push(album)
-              })
-              config.pageToken = response.result.nextPageToken
-              if (config.pageToken) call(config)
-            })
-        call(config)
-      })
-    },
+    // fetchList() {
+    //   this.albumList = []
+    //   const config = {
+    //     pageSize: 50
+    //   }
+    //   const self = this
+    //   this.gapiInit().then(function() {
+    //     const call = (config) =>
+    //       self.$gapi.client.photoslibrary.albums
+    //         .list(config)
+    //         .then((response) => {
+    //           // 0件の場合もある
+    //           if (!response.result.albums) return
+    //           response.result.albums.forEach((album) => {
+    //             self.albumList.push(album)
+    //           })
+    //           config.pageToken = response.result.nextPageToken
+    //           if (config.pageToken) call(config)
+    //         })
+    //     call(config)
+    //   })
+    // },
     ...mapActions('auth', ['login'])
   }
 }
