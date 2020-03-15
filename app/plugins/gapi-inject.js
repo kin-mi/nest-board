@@ -52,7 +52,7 @@ export default async ({ $axios }, inject) => {
     )
     firebase
       .auth()
-      .signInAndRetrieveDataWithCredential(credential)
+      .signInWithCredential(credential)
       .then(({ user }) => {
         console.log('firebase: user signed in!', {
           displayName: user.displayName,

@@ -6,7 +6,7 @@
         <button v-if="!accessToken" @click="login">login</button><br />
         <input v-if="accessToken" v-model="inputAlbumTitle" /><br />
         <button v-if="accessToken" @click="create">create</button><br />
-        <button v-if="accessToken" @click="fetchList">get</button><br />
+        <!-- <button v-if="accessToken" @click="fetchList">get</button><br /> -->
       </div>
     </div>
   </div>
