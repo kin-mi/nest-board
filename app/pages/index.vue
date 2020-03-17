@@ -116,7 +116,7 @@ export default {
           accessToken: authResponse.access_token
         }
         console.log(credential)
-        const res = await this.$axios.post('/server/postPhoto', {
+        const res = await this.$axios.post('/postPhoto', {
           params: {
             accessToken: credential.accessToken,
             photoURL: this.imageData

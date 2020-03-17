@@ -52,18 +52,16 @@ module.exports = {
     ['@nuxtjs/dotenv', { path: './' }]
   ],
   proxy: {
-    '/server': {
-      target: 'http://localhost:9000/.netlify/functions',
-      pathRewrite: {
-        '^/server': '/'
-      }
+    '/.netlify': {
+      target: 'http://localhost:9000',
+      pathRewrite: { '^/.netlify/functions': '' }
     }
   },
   /*
    ** Axios module configuration
    ** See https://axios.nuxtjs.org/options
    */
-  axios: {},
+  axios: { baseURL: '/.netlify/functions' },
   env: {
     APIKEY: process.env.APIKEY,
     AUTHDOMAIN: process.env.AUTHDOMAIN,
