@@ -30,7 +30,7 @@ module.exports = {
   /*
    ** Plugins to load before mounting the App
    */
-  plugins: ['~/plugins/gapi-inject'],
+  plugins: ['~/plugins/gapi-inject', '~/plugins/konva'],
   /*
    ** Nuxt.js dev-modules
    */
@@ -46,13 +46,19 @@ module.exports = {
   modules: [
     // Doc: https://axios.nuxtjs.org/usage
     '@nuxtjs/axios',
+    '@nuxtjs/proxy',
     '@nuxtjs/pwa',
     // Doc: https://github.com/nuxt-community/dotenv-module
     ['@nuxtjs/dotenv', { path: './' }]
   ],
-  // router: {
-  //   middleware: 'authenticated'
-  // },
+  proxy: {
+    '/server': {
+      target: 'http://localhost:9000/.netlify/functions',
+      pathRewrite: {
+        '^/server': '/'
+      }
+    }
+  },
   /*
    ** Axios module configuration
    ** See https://axios.nuxtjs.org/options

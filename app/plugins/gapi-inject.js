@@ -40,6 +40,7 @@ export default async ({ $axios, store }, inject) => {
       auth.signOut().then(() => {
         firebase.auth().signOut()
         store.commit('auth/logout')
+        store.commit('isReady', true)
       })
     )
     return signIn
@@ -59,7 +60,10 @@ export default async ({ $axios, store }, inject) => {
       .signInWithCredential(credential)
       .then(({ user }) => {
         store.dispatch('auth/gotUser', user)
+        store.commit('isReady', true)
       })
+  } else {
+    store.commit('isReady', true)
   }
   inject('gapi', gapi)
   inject('gapiInit', init)
