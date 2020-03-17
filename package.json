@@ -21,6 +21,7 @@
     "express": "^4.16.4",
     "firebase": "^7.10.0",
     "konva": "^4.2.0",
+    "netlify-lambda": "^1.6.3",
     "nuxt": "^2.0.0",
     "vue-konva": "^2.1.1",
     "vue-loading-template": "^1.3.2"
