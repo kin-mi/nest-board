@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="container">
+    <div class="container mx-auto">
       <vue-loading
         v-if="!ready"
         :size="{ width: '100px', height: '100px' }"
@@ -10,18 +10,51 @@
       />
       <div v-else>
         <h1 class="title">Nest Board</h1>
-        <button v-if="!isLoggedIn" @click="$googleSignIn">login</button><br />
         <FreeDraw ref="draw" />
-        <input v-if="isLoggedIn" v-model="inputAlbumTitle" /><br />
-        <button v-if="isLoggedIn" @click="createAlbum">create</button><br />
-        <button v-if="isLoggedIn" @click="fetchAlbumList">get</button><br />
-        <button v-if="isLoggedIn" @click="getDrawData">image</button><br />
-
+        <label
+          class="block text-gray-700 text-sm font-bold mb-2 mt-5"
+          for="album-title"
+        >
+          アルバム名
+        </label>
+        <input
+          id="album-title"
+          v-model="inputAlbumTitle"
+          class="mx-auto bg-white focus:outline-none focus:shadow-outline border border-gray-300 rounded-lg py-1 px-2 block w-75 appearance-none leading-normal"
+        />
+        <label
+          class="block text-gray-700 text-sm font-bold mb-2 mt-2"
+          for="image-title"
+        >
+          画像名
+        </label>
+        <input
+          id="image-title"
+          v-model="inputPhotoTitle"
+          class="mx-auto bg-white focus:outline-none focus:shadow-outline border border-gray-300 rounded-lg py-1 px-2 block w-75 appearance-none leading-normal"
+        />
+        <button
+          @click="postPhoto"
+          class="mx-auto mt-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+        >
+          Google Photosへアップロードする
+        </button>
         <br />
-        <button v-if="isLoggedIn" @click="$googleSignOut">logout</button><br />
-        <img v-if="imageData" :src="imageData" />
+        <button
+          v-if="isLoggedIn"
+          @click="$googleSignOut"
+          class="mx-auto mt-6 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow"
+        >
+          ログアウト
+        </button>
       </div>
     </div>
+    <processing-modal
+      v-if="isProcessing"
+      :contentProgress="contentProgress"
+      :processState="processState"
+      @close="handleModalClose"
+    />
   </div>
 </template>
 
@@ -29,43 +62,69 @@
 import { mapGetters } from 'vuex'
 import { VueLoading } from 'vue-loading-template'
 import FreeDraw from '~/components/FreeDraw'
+import ProcessingModal from '~/components/ProcessingModal'
+const DURING_PROCESSING = {
+  key: 'nest-boar-state',
+  value: 'during'
+}
+const PROCCESS_STATE = {
+  success: 'success',
+  failed: 'failed'
+}
 export default {
   components: {
     VueLoading,
-    FreeDraw
+    FreeDraw,
+    ProcessingModal
   },
   data() {
     return {
-      inputAlbumTitle: 'nest-board-1',
+      inputAlbumTitle: 'Nest Board',
+      inputPhotoTitle: 'nest-board.png',
       albumList: [],
-      imageData: ''
-    }
-  },
-  head() {
-    return {
-      // head内でcallbackを使う
-      // https://vueschool.io/articles/vuejs-tutorials/how-to-load-third-party-scripts-in-nuxt-js/
-      // script: [
-      //   {
-      //     src: 'https://apis.google.com/js/api.js',
-      //     type: 'text/javascript',
-      //     callback: () => {
-      //       this.gapi = window.gapi
-      //       this.gapiClientLoad()
-      //     }
-      //   }
-      // ]
+      imageData: '',
+      isProcessing: false,
+      processState: '',
+      contentProgress: 0
     }
   },
   computed: {
     ...mapGetters(['ready']),
     ...mapGetters('auth', ['isLoggedIn'])
   },
+  watch: {
+    ready(newVal, oldVal) {
+      if (newVal) {
+        const during = localStorage.getItem(DURING_PROCESSING.key)
+        if (during === DURING_PROCESSING.value && this.isLoggedIn) {
+          localStorage.removeItem(DURING_PROCESSING.key)
+          this.postPhoto()
+        }
+      }
+    }
+  },
+  destroyed() {
+    localStorage.removeItem(DURING_PROCESSING.key)
+  },
   methods: {
+    /**
+     * 描画情報をローカルに保存してログイン処理
+     */
+    saveAndLogin() {
+      if (!this.isLoggedIn) {
+        // 描画情報をlocal storageへ保存
+        this.$refs.draw.save()
+        // google sign in
+        this.$googleSignIn()
+      }
+    },
+    /**
+     * アルバムの作成
+     * @return {Object} Album
+     */
     async createAlbum() {
-      // https://medium.com/google-cloud/using-google-apis-with-firebase-auth-and-firebase-ui-on-the-web-46e6189cf571
-      // 不完全
       const ret = await this.$gapiInit().then(() => {
+        // Doc: https://developers.google.com/photos/library/reference/rest/v1/albums/create
         this.$gapi.client.photoslibrary.albums
           .create({
             album: {
@@ -78,6 +137,9 @@ export default {
       })
       return ret
     },
+    /**
+     * アルバムの取得
+     */
     async fetchAlbumList() {
       this.albumList = []
       const config = {
@@ -85,6 +147,7 @@ export default {
       }
       await this.$gapiInit().then(async () => {
         const call = async (config) => {
+          // Doc: https://developers.google.com/photos/library/reference/rest/v1/albums/list
           await this.$gapi.client.photoslibrary.albums
             .list(config)
             .then((response) => {
@@ -101,130 +164,106 @@ export default {
         await call(config)
       })
     },
-    async getDrawData() {
-      await this.fetchAlbumList()
-      const album = this.albumList.find((e) => e.title === this.inputAlbumTitle)
-      console.log(album)
+    /**
+     * 写真を追加する
+     * アルバム未作成の場合は作成する
+     */
+    async postPhoto() {
+      this.isProcessing = true
+      if (!this.isLoggedIn) {
+        // 未ログインの場合、処理中ステータスをセットしてログイン処理
+        localStorage.setItem(DURING_PROCESSING.key, DURING_PROCESSING.value)
+        this.saveAndLogin()
+      }
+      this.contentProgress = 25
+
+      // アルバム一覧の取得
+      await this.fetchAlbumList().catch((e) =>
+        this.onError('Failed fetch Album List.', e)
+      )
+      this.contentProgress = 40
+
+      // 同名アルバムが存在しない場合、作成する
+      // Album Response
+      // Doc: https://developers.google.com/photos/library/reference/rest/v1/albums#resource:-album
+      const album =
+        this.albumList.find((e) => e.title === this.inputAlbumTitle) ||
+        (await this.createAlbum().catch((e) =>
+          this.onError('Failed Create Album.', e)
+        ))
+      this.contentProgress = 50
+
+      // 描画情報の取得（Base64）
       this.imageData = await this.$refs.draw.dataURL()
+
       if (album) {
+        // 認証情報の取得
+        // GoogleAuth
+        // Doc: https://developers.google.com/identity/sign-in/web/reference#googleauththenoninit_onerror
         const auth = await this.$googleAuth()
-        console.log(auth)
+        // GoogleUser
+        // Doc: https://developers.google.com/identity/sign-in/web/reference#googleusergetid
         const googleUser = auth.currentUser.get()
         const authResponse = googleUser.getAuthResponse(true)
-        const credential = {
-          idToken: authResponse.id_token,
-          accessToken: authResponse.access_token
+        const accessToken = authResponse.access_token
+        if (!accessToken) {
+          this.onError('Failed get Authorization Data.')
         }
-        console.log(credential)
-        const res = await this.$axios.post('/postPhoto', {
-          params: {
-            accessToken: credential.accessToken,
-            photoURL: this.imageData
-          }
-        })
-        const uploadToken = res.data
-        const result = await this.$gapiInit().then(async () => {
-          const ret = await this.$gapi.client.photoslibrary.mediaItems.batchCreate(
-            {
-              albumId: album.id,
-              newMediaItems: [
-                {
-                  description: 'Created by Nest Board.',
-                  simpleMediaItem: {
-                    fileName: 'nest-board.png',
-                    uploadToken
-                  }
-                }
-              ]
-            }
-          )
-          return ret
-        })
-        console.log(result)
-        // const bin = atob(this.$refs.draw.dataURL().replace(/^.*,/, ''))
-        // const buffer = new Uint8Array(bin.length)
-        // for (let i = 0; i < bin.length; i++) {
-        //   buffer[i] = bin.charCodeAt(i)
-        // }
-        // let file = null
-        // try {
-        //   file = new Blob([buffer.buffer], {
-        //     type: 'image/png'
-        //   })
-        // } catch (e) {
-        //   console.error('Can not convert base64.')
-        // }
-        // const createCORSRequest = (method, url) => {
-        //   let xhr = new XMLHttpRequest()
-        //   if ('withCredentials' in xhr) {
-        //     // XHR for Chrome/Firefox/Opera/Safari.
-        //     xhr.open(method, url, true)
-        //   } else if (typeof XDomainRequest !== 'undefined') {
-        //     // XDomainRequest for IE.
-        //     // eslint-disable-next-line no-undef
-        //     xhr = new XDomainRequest()
-        //     xhr.open(method, url)
-        //   } else {
-        //     // CORS not supported.
-        //     xhr = null
-        //   }
-        //   return xhr
-        // }
-        // const url = 'https://photoslibrary.googleapis.com/v1/uploads'
-        // const xhr = createCORSRequest('POST', url)
-        // xhr.setRequestHeader(
-        //   'Authorization',
-        //   `Bearer ${encodeURIComponent(credential.idToken)}`
-        // )
-        // xhr.setRequestHeader('Content-type', 'application/octet-stream')
-        // xhr.setRequestHeader('X-Goog-Upload-Content-Type', 'image/png')
-        // xhr.setRequestHeader('X-Goog-Upload-Protocol', 'raw')
-        // xhr.send(file)
-        // const form = new FormData()
-        // form.append('file', file)
+        this.contentProgress = 60
 
-        // fetch('https://photoslibrary.googleapis.com/v1/uploads', {
-        //   method: 'POST',
-        //   headers: new Headers({
-        //     Authorization: `Bearer ${encodeURIComponent(credential.idToken)}`,
-        //     'Content-type': 'application/octet-stream',
-        //     'X-Goog-Upload-Content-Type': 'image/png',
-        //     'X-Goog-Upload-Protocol': 'raw'
-        //   }),
-        //   body: form
-        // })
-        //   .then((res) => {
-        //     return res.json()
-        //   })
-        //   .then(function(val) {
-        //     console.log(val)
-        //   })
-        // this.$gapi.client.setApiKey('')
-        // this.$gapi.client
-        //   .request({
-        //     path: 'https://photoslibrary.googleapis.com/v1/uploads',
-        //     method: 'POST',
-        //     headers: {
-        //       Authorization: `Bearer ${encodeURIComponent(credential.idToken)}`,
-        //       'Content-type': 'application/octet-stream',
-        //       'X-Goog-Upload-Content-Type': 'image/png',
-        //       'X-Goog-Upload-Protocol': 'raw'
-        //     },
-        //     body: file
-        //   })
-        //   .then((response) => {
-        //     console.log(response)
-        //   })
+        // 画像をGoogleへアップロード(Netlify Function)
+        // Doc: https://developers.google.com/photos/library/guides/upload-media
+        const res = await this.$axios
+          .post('/postPhoto', {
+            params: {
+              accessToken,
+              photoURL: this.imageData
+            }
+          })
+          .catch((e) => this.onError('Failed POST Photo.', e))
+        const uploadToken = res.data
+        this.contentProgress = 75
+
+        if (uploadToken) {
+          this.contentProgress = 95
+          // アップロードした画像をアルバムに追加
+          const result = await this.$gapiInit().then(async () => {
+            // Doc: https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate
+            const ret = await this.$gapi.client.photoslibrary.mediaItems.batchCreate(
+              {
+                albumId: album.id,
+                newMediaItems: [
+                  {
+                    description: 'Created by Nest Board.',
+                    simpleMediaItem: {
+                      fileName: this.inputPhotoTitle,
+                      uploadToken
+                    }
+                  }
+                ]
+              }
+            )
+            return ret
+          })
+          if (result.status !== 200)
+            this.onError('Failed mediaItems:batchCreate.')
+          this.contentProgress = 100
+        } else {
+          this.onError('Failed POST Photo.')
+        }
+        this.processState = this.hasError
+          ? PROCCESS_STATE.failed
+          : PROCCESS_STATE.success
       }
-      // console.log(
-      //   atob(this.$refs.draw.dataURL().replace(/data:image\/png;base64,/g, ''))
-      // )
-      // this.$gapiInit().then(() => {
-      //   this.$gapi.client.photoslibrary.albums
-      // })
-      // console.log(
-      //   this.$refs.draw.dataURL().replace(/data:image\/png;base64,/g, '')
-      // )
+    },
+    onError(message) {
+      this.hasError = true
+      // eslint-disable-next-line no-console
+      console.error(message)
+    },
+    handleModalClose() {
+      this.processState = ''
+      this.isProcessing = false
     }
   }
 }
