@@ -43,16 +43,21 @@ export default {
     }
   },
   mounted() {
+    window.addEventListener('resize', this.resizeStage)
     this.resizeStage()
     this.load()
   },
-  destroyed() {
+  beforeDestroy() {
     this.returnScroll()
+    window.removeEventListener('resize', this.resizeStage)
   },
   methods: {
     resizeStage() {
       // windowのサイズに合わせてリサイズ
-      const windowWidth = window.parent.screen.width
+      const windowWidth = Math.min(
+        window.innerWidth,
+        window.parent.screen.width
+      )
       if (windowWidth < stageSize.width) {
         this.scale = windowWidth / stageSize.width
         this.configKonva.width = stageSize.width * this.scale
