@@ -14,7 +14,7 @@
     >
       <v-layer ref="layer" />
     </v-stage>
-    <p>innerWidth: {{ window.innerWidth }}</p>
+    <p>innerWidth: {{ debugPrint }}</p>
     <p>configKonva.width: {{ configKonva.width }}</p>
   </div>
 </template>
