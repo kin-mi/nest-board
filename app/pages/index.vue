@@ -64,9 +64,10 @@ import { VueLoading } from 'vue-loading-template'
 import FreeDraw from '~/components/FreeDraw'
 import ProcessingModal from '~/components/ProcessingModal'
 const DURING_PROCESSING = {
-  key: 'nest-boar-state',
+  key: 'nest-board-state',
   value: 'during'
 }
+const DURING_PROCESSING_TITLE = 'nest-board-state-title'
 const PROCCESS_STATE = {
   success: 'success',
   failed: 'failed'
@@ -95,9 +96,16 @@ export default {
   watch: {
     ready(newVal, oldVal) {
       if (newVal) {
+        // 処理中の場合、送信処理を続行する
         const during = localStorage.getItem(DURING_PROCESSING.key)
         if (during === DURING_PROCESSING.value && this.isLoggedIn) {
+          const titles = JSON.parse(
+            localStorage.getItem(DURING_PROCESSING_TITLE)
+          )
+          this.inputAlbumTitle = titles.album
+          this.inputPhotoTitle = titles.photo
           localStorage.removeItem(DURING_PROCESSING.key)
+          localStorage.removeItem(DURING_PROCESSING_TITLE)
           this.postPhoto()
         }
       }
@@ -105,6 +113,7 @@ export default {
   },
   destroyed() {
     localStorage.removeItem(DURING_PROCESSING.key)
+    localStorage.removeItem(DURING_PROCESSING_TITLE)
   },
   methods: {
     /**
@@ -125,7 +134,7 @@ export default {
     async createAlbum() {
       const ret = await this.$gapiInit().then(() => {
         // Doc: https://developers.google.com/photos/library/reference/rest/v1/albums/create
-        this.$gapi.client.photoslibrary.albums
+        return this.$gapi.client.photoslibrary.albums
           .create({
             album: {
               title: this.inputAlbumTitle
@@ -169,10 +178,18 @@ export default {
      * アルバム未作成の場合は作成する
      */
     async postPhoto() {
+      this.contentProgress = 10
       this.isProcessing = true
       if (!this.isLoggedIn) {
         // 未ログインの場合、処理中ステータスをセットしてログイン処理
         localStorage.setItem(DURING_PROCESSING.key, DURING_PROCESSING.value)
+        localStorage.setItem(
+          DURING_PROCESSING_TITLE,
+          JSON.stringify({
+            album: this.inputAlbumTitle,
+            photo: this.inputPhotoTitle
+          })
+        )
         this.saveAndLogin()
       }
       this.contentProgress = 25
@@ -186,11 +203,12 @@ export default {
       // 同名アルバムが存在しない場合、作成する
       // Album Response
       // Doc: https://developers.google.com/photos/library/reference/rest/v1/albums#resource:-album
-      const album =
-        this.albumList.find((e) => e.title === this.inputAlbumTitle) ||
-        (await this.createAlbum().catch((e) =>
+      let album = this.albumList.find((e) => e.title === this.inputAlbumTitle)
+      if (!album) {
+        album = await this.createAlbum().catch((e) =>
           this.onError('Failed Create Album.', e)
-        ))
+        )
+      }
       this.contentProgress = 50
 
       // 描画情報の取得（Base64）
@@ -251,10 +269,12 @@ export default {
         } else {
           this.onError('Failed POST Photo.')
         }
-        this.processState = this.hasError
-          ? PROCCESS_STATE.failed
-          : PROCCESS_STATE.success
+      } else {
+        this.onError('Failed Album not found.')
       }
+      this.processState = this.hasError
+        ? PROCCESS_STATE.failed
+        : PROCCESS_STATE.success
     },
     onError(message) {
       this.hasError = true

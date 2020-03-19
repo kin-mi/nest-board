@@ -28,7 +28,7 @@
               </button>
             </div>
           </template>
-          <template v-else-if="processState === 'success'">
+          <template v-else>
             <p class="mb-2 text-center text-red-800">エラーが発生しました。</p>
             <div class="text-center">
               <button
