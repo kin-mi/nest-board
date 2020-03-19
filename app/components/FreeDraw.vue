@@ -14,8 +14,6 @@
     >
       <v-layer ref="layer" />
     </v-stage>
-    <p>innerWidth: {{ debugPrint }}</p>
-    <p>configKonva.width: {{ configKonva.width }}</p>
   </div>
 </template>
 <script>
@@ -47,7 +45,6 @@ export default {
   mounted() {
     this.resizeStage()
     this.load()
-    this.debugPrint = window.innerWidth
   },
   destroyed() {
     this.returnScroll()
@@ -55,7 +52,7 @@ export default {
   methods: {
     resizeStage() {
       // windowのサイズに合わせてリサイズ
-      const windowWidth = window.innerWidth
+      const windowWidth = window.parent.screen.width
       if (windowWidth < stageSize.width) {
         this.scale = windowWidth / stageSize.width
         this.configKonva.width = stageSize.width * this.scale
