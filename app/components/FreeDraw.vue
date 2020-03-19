@@ -14,8 +14,6 @@
     >
       <v-layer ref="layer" />
     </v-stage>
-    <p>innerWidth: {{ window.innerWidth }}</p>
-    <p>configKonva.width: {{ configKonva.width }}</p>
   </div>
 </template>
 <script>
@@ -40,12 +38,14 @@ export default {
       scale: 1,
       isPaint: false,
       lastLine: null,
-      lines: []
+      lines: [],
+      debugPrint: ''
     }
   },
   mounted() {
     this.resizeStage()
     this.load()
+    this.debugPrint = window.innerWidth
   },
   destroyed() {
     this.returnScroll()
