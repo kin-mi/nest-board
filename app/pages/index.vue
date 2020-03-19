@@ -39,7 +39,7 @@
         >
           Google Photosへアップロードする
         </button>
-        <div v-if="!isLoggedIn" class="text-xs mx-3">
+        <div v-if="!isLoggedIn" class="text-xs mx-3 mt-2">
           <p>
             初回ログイン時は警告が出ます。
           </p>
@@ -50,7 +50,7 @@
             >」をクリックした後、
           </p>
           <p>権限の許可をしてください。</p>
-          <p>
+          <p class="mt-2">
             当サイトから無断でGoogle Photosへアクセスすることは<span
               class="font-bold"
               >出来ません</span
