@@ -39,6 +39,24 @@
         >
           Google Photosへアップロードする
         </button>
+        <div v-if="!isLoggedIn" class="text-xs mx-3">
+          <p>
+            初回ログイン時は警告が出ます。
+          </p>
+          <p>
+            左下の「<span class="font-bold">詳細</span>」を開いて「<span
+              class="font-bold"
+              >Nest Board（安全ではないページ）に移動</span
+            >」をクリックした後、
+          </p>
+          <p>権限の許可をしてください。</p>
+          <p>
+            当サイトから無断でGoogle Photosへアクセスすることは<span
+              class="font-bold"
+              >出来ません</span
+            >。
+          </p>
+        </div>
         <br />
         <button
           v-if="isLoggedIn"
