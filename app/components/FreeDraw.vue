@@ -12,7 +12,9 @@
       @touchmove="handleMove"
       class="border border-gray-500 rounded-md"
     >
-      <v-layer ref="layer" />
+      <v-layer ref="layer">
+        <v-rect :config="configBg" />
+      </v-layer>
     </v-stage>
   </div>
 </template>
@@ -35,6 +37,13 @@ export default {
   data() {
     return {
       configKonva: { ...stageSize },
+      configBg: {
+        fill: 'white',
+        x: 0,
+        y: 0,
+        width: stageSize.width,
+        height: stageSize.height
+      },
       scale: 1,
       isPaint: false,
       lastLine: null,
@@ -58,15 +67,17 @@ export default {
         window.innerWidth,
         window.parent.screen.width
       )
-      if (windowWidth < stageSize.width) {
-        this.scale = windowWidth / stageSize.width
-        this.configKonva.width = stageSize.width * this.scale
-        this.configKonva.height = stageSize.height * this.scale
-        this.configKonva.scale = { x: this.scale, y: this.scale }
-      } else {
-        this.configKonva.width = stageSize.width
-        this.configKonva.height = stageSize.height
-      }
+      this.scale =
+        windowWidth < stageSize.width ? windowWidth / stageSize.width : 1
+
+      this.configKonva.width = stageSize.width * this.scale
+      this.configKonva.height = stageSize.height * this.scale
+      this.configKonva.scale = { x: this.scale, y: this.scale }
+
+      this.configBg.width = stageSize.width
+      this.configBg.height = stageSize.height
+      this.configBg.scale = { x: this.scale, y: this.scale }
+
       this.$refs.stage.getNode().draw()
     },
     handleStart() {

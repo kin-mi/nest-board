@@ -57,6 +57,7 @@
             >。
           </p>
         </div>
+        <caution-for-safari v-if="!isLoggedIn" />
         <br />
         <button
           v-if="isLoggedIn"
@@ -81,6 +82,8 @@ import { mapGetters } from 'vuex'
 import { VueLoading } from 'vue-loading-template'
 import FreeDraw from '~/components/FreeDraw'
 import ProcessingModal from '~/components/ProcessingModal'
+import CautionForSafari from '~/components/CautionForSafari'
+
 const DURING_PROCESSING = {
   key: 'nest-board-state',
   value: 'during'
@@ -94,7 +97,8 @@ export default {
   components: {
     VueLoading,
     FreeDraw,
-    ProcessingModal
+    ProcessingModal,
+    CautionForSafari
   },
   data() {
     return {
