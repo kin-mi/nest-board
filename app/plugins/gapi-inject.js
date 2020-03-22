@@ -26,6 +26,7 @@ export default ({ store }, inject) => {
     const signIn = auth(gapi).then((auth) =>
       auth.signIn({
         ux_mode: 'redirect',
+        prompt: 'select_account',
         scope: authConfig.Google.scopes.join(' ')
       })
     )
